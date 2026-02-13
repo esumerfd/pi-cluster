@@ -1,0 +1,38 @@
+---
+- name: Hailo Installation - Pi #1 only
+  hosts: hailo
+  become: true
+
+  tasks:
+    # Step 3a: Install Hailo software
+    - name: Install hailo-all package
+      apt:
+        name: hailo-all
+        state: present
+        update_cache: true
+
+    # Step 3b: Reboot
+    - name: Reboot Pi
+      reboot:
+        reboot_timeout: 120
+
+    # Step 3c: Verify installation
+    - name: Verify Hailo device
+      command: hailortcli fw-control identify
+      register: hailo_identify
+      changed_when: false
+
+    - name: Show Hailo identification
+      debug:
+        var: hailo_identify.stdout_lines
+
+    # Step 3d: Check kernel logs
+    - name: Check dmesg for Hailo
+      shell: dmesg | grep -i hailo
+      register: hailo_dmesg
+      changed_when: false
+      failed_when: false
+
+    - name: Show Hailo kernel logs
+      debug:
+        var: hailo_dmesg.stdout_lines

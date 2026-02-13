@@ -2,7 +2,7 @@
 
 A 3-node Raspberry Pi 5 cluster for running local LLM inference, with a Hailo AI HAT+ for hardware-accelerated edge AI.
 
-![Pi Cluster](pi-cluter.jpg)
+![Pi Cluster](docs/images/pi-cluter.jpg)
 
 ## Goals
 

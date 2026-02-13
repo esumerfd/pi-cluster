@@ -25,16 +25,24 @@ brew install esolitos/ipa/sshpass
 
 ### 0d) Project structure
 
+Each phase gets its own directory with a `README.md`, Ansible playbook, and any supporting files.
+
 ```
 pi-cluster/
+├── README.md
 ├── CLAUDE.md
 ├── plan.md
-├── inventory.yml          # Pi host definitions
-├── ansible.cfg            # Ansible configuration
-├── playbooks/
-│   ├── 01-initial-setup.yml
-│   ├── 02-runtime-config.yml
-│   └── 03-hailo-install.yml
+├── inventory.yml              # Pi host definitions (shared across phases)
+├── ansible.cfg                # Ansible configuration (shared across phases)
+├── 00-initial-setup/
+│   ├── README.md              # Step 0 instructions (Mac tooling install)
+│   └── setup.sh               # brew install ansible, sshpass
+├── 10-os-setup/
+│   ├── README.md              # Steps 1 & 2 instructions
+│   └── playbook.yml           # User creation, shell config, PCIe Gen 3, reboot
+└── 20-hailo-setup/
+    ├── README.md              # Step 3 instructions
+    └── playbook.yml           # hailo-all install, verify, diagnostics
 ```
 
 ---
