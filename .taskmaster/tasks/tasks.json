@@ -1,0 +1,33 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Set Up Base Operating System for Pi Cluster",
+        "description": "Install and configure the foundational OS on each Raspberry Pi node, ensuring network connectivity, secure access, and basic utilities required for the cluster.",
+        "details": "1. **Hardware Preparation**: Gather all Raspberry Pi devices, micro‑SD cards, power supplies, and a wired Ethernet switch. Verify that each Pi has the correct model (e.g., Pi 4B) and firmware.\n2. **OS Image Selection**: Download the latest Raspberry Pi OS Lite image (64‑bit if supported) from the official repository. Verify the SHA256 checksum.\n3. **Imaging SD Cards**: Use `balenaEtcher` or `dd` to flash the OS image onto each micro‑SD card. Configure a pre‑seeded `ssh` key by placing the public key in `/etc/ssh/authorized_keys` before flashing.\n4. **Initial Boot & Networking**:\n   - Insert SD cards and boot the Pis.\n   - Assign static IPs via DHCP reservation in the router or configure `/etc/dhcpcd.conf` on each Pi.\n   - Verify that `hostname` is set uniquely (e.g., `pi-node-01`).\n5. **Essential Package Installation**:\n   - `apt update && apt upgrade -y`\n   - `apt install -y python3 python3-pip git curl htop net-tools docker.io`.\n   - Enable and start Docker: `systemctl enable --now docker`.\n6. **Security Hardening**:\n   - Disable password authentication: edit `/etc/ssh/sshd_config` to set `PasswordAuthentication no`.\n   - Add a non‑root user with `sudo` privileges.\n   - Update firewall rules (UFW) to allow only necessary ports (22, 80, 443, 8080 for cluster services).\n7. **Time Synchronization**:\n   - Install and configure NTP (`systemctl enable --now systemd-timesyncd`).\n8. **Scripted Automation**:\n   - Create a `setup.sh` script that automates steps 3‑7.\n   - Store the script in a central Git repository for version control.\n9. **Documentation**:\n   - Record the IP address, hostname, and OS version of each node in a cluster inventory spreadsheet.\n   - Write a quick‑start guide for future maintenance.\n10. **Baseline Health Check**:\n    - Run a health script that checks CPU, memory, disk usage, and Docker container status on each node.\n\nAll configuration files should be stored under version control (e.g., `/etc/dhcpcd.conf`, `/etc/ssh/sshd_config`) using Git for traceability.\n\n",
+        "testStrategy": "1. **Connectivity Test**: From the control node, ping each Pi node by hostname and IP to confirm network connectivity.\n2. **SSH Verification**: Use key‑based SSH to log into each node and execute `echo $HOSTNAME` to ensure the hostname matches the inventory.\n3. **Python & Docker Checks**: Run `python3 --version` and `docker --version` on each node; verify Docker is running by executing `docker run --rm hello-world`.\n4. **NTP Sync Verification**: On each node, run `timedatectl status` and confirm that `System clock synchronized: yes` and that NTP is active.\n5. **Firewall Rules**: Verify that only allowed ports are open using `ufw status` or `iptables -L`.\n6. **Resource Monitoring**: Execute the baseline health script and confirm CPU, memory, and disk usage are within acceptable thresholds.\n7. **Automated Setup Validation**: Re‑run the `setup.sh` script on a clean Pi image to ensure idempotence and that no errors occur.\n8. **Documentation Review**: Cross‑check the inventory spreadsheet against actual node details.\n\nAll tests should pass without errors; any failures should be logged and addressed before proceeding to higher‑level cluster configuration tasks.\n\n",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Ingest and Add Additional Tasks from plan.md",
+        "description": "Create new project tasks for all pending items listed in the plan.md file and integrate them into the current task list.",
+        "details": "1. Locate and open `/Users/esumerfd/GoogleDrive/edward/Personal/projects/ai/pi-cluster/plan.md`. 2. Identify any sections titled \"Additional Tasks\", \"Additions\", or similar that contain a list of actions to be performed. 3. For each listed action, generate a new task entry with:\n   - A unique ID (e.g., incremental from the last existing task ID).\n   - A concise title extracted from the action.\n   - A brief description that expands on the action.\n   - Detailed implementation steps, code snippets, or configuration files if applicable.\n   - Test strategy outlining verification steps.\n   - Dependencies: determine if the new task depends on any previously defined tasks (e.g., Task 1). If no explicit dependency exists, leave the array empty.\n   - Assign appropriate priority and status (e.g., \"pending\").\n4. Validate that all extracted tasks are added to the project management system (e.g., Jira, GitHub Issues, Asana) with proper formatting and consistent metadata.\n5. Update the master project plan to include the new tasks in the correct sequence.",
+        "testStrategy": "1. Run a script or manual check to ensure that every action listed under \"Additional Tasks\" in plan.md has a corresponding task in the project system.\n2. Verify that each new task contains a title, description, details, testStrategy, and dependencies.\n3. Check for duplicate task IDs or titles.\n4. Confirm that the dependencies array accurately reflects required prerequisites (e.g., if a task needs the OS to be set up, ensure it lists Task 1 as a dependency).\n5. Execute a pull‑request or task‑creation workflow to ensure tasks can be created programmatically and that the system accepts the data format.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "medium",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2026-02-13T02:30:26.686Z",
+      "description": "Default tasks context",
+      "updated": "2026-02-13T02:39:26.222Z"
+    }
+  }
+}
