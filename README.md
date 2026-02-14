@@ -27,13 +27,13 @@ A 3-node Raspberry Pi 5 cluster for running local LLM inference, with a Hailo AI
 | Phase | Target | Status |
 |---|---|---|
 | 00 - Initial Setup | Mac | Done -- Ansible and sshpass installed |
-| 10 - OS Setup | Pi #1 | Booted, SSH confirmed at `192.168.68.66` |
+| 10 - OS Setup | Pi #1 | Red LED, not booting -- needs re-flash. HAT may be interfering. |
 | 10 - OS Setup | Pi #2 | Booted (green light), SSH not enabled -- needs re-flash |
 | 10 - OS Setup | Pi #3 | Booted (green light), SSH not enabled -- needs re-flash |
-| 10 - OS Setup | All | Blocked -- waiting for Pi #2 and Pi #3 SSH access |
+| 10 - OS Setup | All | Blocked -- all 3 Pis need re-flash with SSH enabled |
 | 20 - Hailo Setup | Pi #1 | Not started |
 
-**Current blocker:** Pi #2 and Pi #3 need to be re-flashed with SSH enabled in Raspberry Pi Imager.
+**Current blocker:** All 3 Pis need to be re-flashed with SSH enabled in Raspberry Pi Imager. Pi #1 is not booting (red LED only) -- try removing the AI HAT+ and booting without it to rule out a power or PCIe issue.
 
 ## Getting Started
 
