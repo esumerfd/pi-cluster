@@ -2,36 +2,23 @@
 - name: OS Setup - All Pis
   hosts: pis
   become: true
-  vars:
-    new_user: "{{ lookup('env', 'USER') }}"
-    user_password: "{{ lookup('env', 'SECRET_PASSWORD') }}"
 
   tasks:
-    # Step 1b: Create user
-    - name: Create user with sudo privileges
-      user:
-        name: "{{ new_user }}"
-        groups: sudo
-        append: true
-        shell: /bin/bash
-        password: "{{ user_password | password_hash('sha512') }}"
-        create_home: true
-
-    # Step 1c: Configure shell
+    # Configure shell
     - name: Set vi mode in bashrc
       lineinfile:
-        path: "/home/{{ new_user }}/.bashrc"
+        path: "/home/{{ ansible_user }}/.bashrc"
         line: "set -o vi"
-        owner: "{{ new_user }}"
-        group: "{{ new_user }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
 
-    # Step 2a: Enable PCIe Gen 3
+    # Enable PCIe Gen 3
     - name: Enable PCIe Gen 3.0 in config.txt
       lineinfile:
         path: /boot/firmware/config.txt
         line: "dtparam=pciex1_gen=3"
 
-    # Step 2b & 2c: Reboot and wait
+    # Reboot and wait
     - name: Reboot Pi
       reboot:
         reboot_timeout: 120
