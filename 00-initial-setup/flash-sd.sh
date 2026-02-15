@@ -263,6 +263,11 @@ sudo tee "$MOUNT_POINT/firstrun.sh" > /dev/null << FIRSTRUN
 #!/bin/bash
 set -e
 
+# Ensure user has sudo access (passwordless for Ansible)
+usermod -aG sudo "$PI_USER"
+echo "$PI_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/010_$PI_USER
+chmod 0440 /etc/sudoers.d/010_$PI_USER
+
 # Set up SSH key auth for $PI_USER
 USER_HOME=\$(getent passwd "$PI_USER" | cut -d: -f6)
 mkdir -p "\$USER_HOME/.ssh"
