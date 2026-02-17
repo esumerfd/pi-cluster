@@ -15,8 +15,11 @@ setup: ## Install Ansible and sshpass on Mac
 list-disks: ## List disks to find your microSD card
 	diskutil list
 
-flash-sd: ## Flash SD card (auto-detects removable disk): make flash-sd [DISK=/dev/rdiskN]
-	./00-initial-setup/flash-sd.sh $(if $(DISK),$(DISK),)
+flash-sd: ## Flash SD card: make flash-sd name=control [DISK=/dev/rdiskN]
+ifndef name
+	$(error name is required. Usage: make flash-sd name=control)
+endif
+	./00-initial-setup/flash-sd.sh $(name) $(if $(DISK),$(DISK),)
 
 # --- Discovery ---
 

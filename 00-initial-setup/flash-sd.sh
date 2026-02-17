@@ -10,10 +10,15 @@ set -euo pipefail
 # Flash a Raspberry Pi OS image to a microSD card, pre-configured with:
 #   - SSH enabled (key-based auth using ~/.ssh/id_rsa.pub)
 #   - User account (from $USER with random password)
+#   - Custom hostname
 #   - English (US) locale and keyboard
 #
 # Usage:
-#   ./flash-sd.sh [/dev/rdiskN]
+#   ./flash-sd.sh <hostname> [/dev/rdiskN]
+#
+# Examples:
+#   ./flash-sd.sh control          # auto-detect disk
+#   ./flash-sd.sh worker1 /dev/rdisk4
 #
 # If no disk is specified, the script will detect removable disks and offer a menu.
 # The script downloads the official Raspberry Pi OS Trixie image automatically.
@@ -24,6 +29,16 @@ IMAGE_URL="https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_l
 IMAGE_DIR="/tmp/pi-cluster-images"
 IMAGE_XZ="$IMAGE_DIR/raspios-trixie-arm64-lite.img.xz"
 IMAGE="$IMAGE_DIR/raspios-trixie-arm64-lite.img"
+
+if [ $# -lt 1 ]; then
+    echo "Usage: ./flash-sd.sh <hostname> [/dev/rdiskN]"
+    echo "Examples: ./flash-sd.sh control"
+    echo "          ./flash-sd.sh worker1 /dev/rdisk4"
+    exit 1
+fi
+
+PI_HOSTNAME="$1"
+shift
 
 PI_USER="${USER:?USER environment variable is not set}"
 SSH_PUBKEY="$HOME/.ssh/id_rsa.pub"
@@ -71,6 +86,11 @@ find_removable_disks() {
 
         disks+=("${disk}|${name}|${size_gb}GB")
     done < <(diskutil list | grep -oE '/dev/disk[0-9]+' | sort -u)
+
+    if [[ ${#disks[@]} -eq 0 ]]; then
+        echo "No removable disks found." >&2
+        return 1
+    fi
 
     printf '%s\n' "${disks[@]}"
 }
@@ -202,6 +222,7 @@ echo "=============================="
 echo "Image:          $IMAGE"
 echo "Target disk:    $DISK"
 echo "Boot partition: $BOOT_PARTITION"
+echo "Hostname:       $PI_HOSTNAME"
 echo "Pi user:        $PI_USER"
 echo ""
 
@@ -263,18 +284,26 @@ sudo tee "$MOUNT_POINT/firstrun.sh" > /dev/null << FIRSTRUN
 #!/bin/bash
 set -e
 
+# Wait for userconf.txt user creation to complete
+while ! id $PI_USER >/dev/null 2>&1; do
+  sleep 1
+done
+
 # Ensure user has sudo access (passwordless for Ansible)
-usermod -aG sudo "$PI_USER"
-echo "$PI_USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/010_$PI_USER
+usermod -aG sudo $PI_USER
+echo '$PI_USER ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/010_$PI_USER
 chmod 0440 /etc/sudoers.d/010_$PI_USER
 
 # Set up SSH key auth for $PI_USER
-USER_HOME=\$(getent passwd "$PI_USER" | cut -d: -f6)
-mkdir -p "\$USER_HOME/.ssh"
-echo "$SSH_PUBKEY_CONTENT" > "\$USER_HOME/.ssh/authorized_keys"
-chmod 700 "\$USER_HOME/.ssh"
-chmod 600 "\$USER_HOME/.ssh/authorized_keys"
-chown -R "$PI_USER:$PI_USER" "\$USER_HOME/.ssh"
+USER_HOME=\$(getent passwd $PI_USER | cut -d: -f6)
+mkdir -p \$USER_HOME/.ssh
+echo '$SSH_PUBKEY_CONTENT' > \$USER_HOME/.ssh/authorized_keys
+chmod 700 \$USER_HOME/.ssh
+chmod 600 \$USER_HOME/.ssh/authorized_keys
+chown -R $PI_USER:$PI_USER \$USER_HOME/.ssh
+
+# Set hostname
+raspi-config nonint do_hostname $PI_HOSTNAME
 
 # Set locale to English (US)
 raspi-config nonint do_change_locale en_US.UTF-8
