@@ -248,7 +248,17 @@ sudo dd if="$IMAGE" of="$DISK" bs=1m status=progress
 sync
 
 # Step 3: Configure boot partition (SSH, user, locale)
+# TODO: Uncomment boot partition configuration once dd baseline is verified
 echo ""
+echo "[3/4] Skipping boot partition configuration (baseline test)..."
+echo "  Remove the early exit below to enable configuration."
+echo ""
+echo "[4/4] Ejecting..."
+diskutil eject "${DISK/rdisk/disk}"
+echo ""
+echo "Done. Baseline image -- no customization applied."
+exit 0
+
 echo "[3/4] Configuring boot partition..."
 sleep 2  # give macOS time to detect partitions
 
@@ -270,11 +280,9 @@ fi
 sudo touch "$MOUNT_POINT/ssh"
 echo "  Enabled SSH"
 
-# Create default user with a random password (SSH key auth will be used instead)
+# Generate encrypted password to embed in firstrun script (SSH key auth will be used instead)
 RANDOM_PASSWORD=$(openssl rand -base64 32)
 ENCRYPTED_PASSWORD=$(openssl passwd -6 "$RANDOM_PASSWORD")
-echo "${PI_USER}:${ENCRYPTED_PASSWORD}" | sudo tee "$MOUNT_POINT/userconf.txt" > /dev/null
-echo "  Created user: $PI_USER (random password, key auth only)"
 
 # Read the SSH public key to embed in firstrun script
 SSH_PUBKEY_CONTENT=$(cat "$SSH_PUBKEY")
@@ -284,10 +292,8 @@ sudo tee "$MOUNT_POINT/firstrun.sh" > /dev/null << FIRSTRUN
 #!/bin/bash
 set -e
 
-# Wait for userconf.txt user creation to complete
-while ! id $PI_USER >/dev/null 2>&1; do
-  sleep 1
-done
+# Create user account
+useradd -m -s /bin/bash -p '$ENCRYPTED_PASSWORD' $PI_USER
 
 # Ensure user has sudo access (passwordless for Ansible)
 usermod -aG sudo $PI_USER
@@ -313,6 +319,20 @@ raspi-config nonint do_change_timezone America/New_York
 
 # Set keyboard layout to US
 raspi-config nonint do_configure_keyboard us
+
+# Display IP address in large banner on console
+IP_ADDR=\$(hostname -I | awk '{print \$1}')
+echo
+echo '###############################################'
+echo '#                                             #'
+echo '#   PI CLUSTER NODE READY                     #'
+echo '#                                             #'
+printf '#   Hostname: %-31s #\n' $PI_HOSTNAME
+printf '#   User:     %-31s #\n' $PI_USER
+printf '#   IP:       %-31s #\n' \$IP_ADDR
+echo '#                                             #'
+echo '###############################################'
+echo
 
 # Remove this script after first run
 rm -f /boot/firmware/firstrun.sh
