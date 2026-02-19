@@ -248,17 +248,7 @@ sudo dd if="$IMAGE" of="$DISK" bs=1m status=progress
 sync
 
 # Step 3: Configure boot partition (SSH, user, locale)
-# TODO: Uncomment boot partition configuration once dd baseline is verified
 echo ""
-echo "[3/4] Skipping boot partition configuration (baseline test)..."
-echo "  Remove the early exit below to enable configuration."
-echo ""
-echo "[4/4] Ejecting..."
-diskutil eject "${DISK/rdisk/disk}"
-echo ""
-echo "Done. Baseline image -- no customization applied."
-exit 0
-
 echo "[3/4] Configuring boot partition..."
 sleep 2  # give macOS time to detect partitions
 
@@ -287,52 +277,10 @@ ENCRYPTED_PASSWORD=$(openssl passwd -6 "$RANDOM_PASSWORD")
 # Read the SSH public key to embed in firstrun script
 SSH_PUBKEY_CONTENT=$(cat "$SSH_PUBKEY")
 
-# Configure user SSH key, locale, timezone, and keyboard via firstrun script
-sudo tee "$MOUNT_POINT/firstrun.sh" > /dev/null << FIRSTRUN
+# Configure firstrun script (empty for now -- testing boot with ssh + empty script)
+sudo tee "$MOUNT_POINT/firstrun.sh" > /dev/null << 'FIRSTRUN'
 #!/bin/bash
 set -e
-
-# Create user account
-useradd -m -s /bin/bash -p '$ENCRYPTED_PASSWORD' $PI_USER
-
-# Ensure user has sudo access (passwordless for Ansible)
-usermod -aG sudo $PI_USER
-echo '$PI_USER ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/010_$PI_USER
-chmod 0440 /etc/sudoers.d/010_$PI_USER
-
-# Set up SSH key auth for $PI_USER
-USER_HOME=\$(getent passwd $PI_USER | cut -d: -f6)
-mkdir -p \$USER_HOME/.ssh
-echo '$SSH_PUBKEY_CONTENT' > \$USER_HOME/.ssh/authorized_keys
-chmod 700 \$USER_HOME/.ssh
-chmod 600 \$USER_HOME/.ssh/authorized_keys
-chown -R $PI_USER:$PI_USER \$USER_HOME/.ssh
-
-# Set hostname
-raspi-config nonint do_hostname $PI_HOSTNAME
-
-# Set locale to English (US)
-raspi-config nonint do_change_locale en_US.UTF-8
-
-# Set timezone to America/New_York
-raspi-config nonint do_change_timezone America/New_York
-
-# Set keyboard layout to US
-raspi-config nonint do_configure_keyboard us
-
-# Display IP address in large banner on console
-IP_ADDR=\$(hostname -I | awk '{print \$1}')
-echo
-echo '###############################################'
-echo '#                                             #'
-echo '#   PI CLUSTER NODE READY                     #'
-echo '#                                             #'
-printf '#   Hostname: %-31s #\n' $PI_HOSTNAME
-printf '#   User:     %-31s #\n' $PI_USER
-printf '#   IP:       %-31s #\n' \$IP_ADDR
-echo '#                                             #'
-echo '###############################################'
-echo
 
 # Remove this script after first run
 rm -f /boot/firmware/firstrun.sh
