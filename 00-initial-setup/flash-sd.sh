@@ -27,7 +27,7 @@ set -euo pipefail
 # System disks (internal, synthesized, APFS) are always excluded.
 # Pis connect via Ethernet -- no WiFi configuration is needed.
 
-IMAGE_URL="https://downloads.raspberrypi.com/raspios_lite_arm64/images/raspios_lite_arm64-2025-12-04/2025-12-04-raspios-trixie-arm64-lite.img.xz"
+IMAGE_URL="https://downloads.raspberrypi.com/raspios_lite_arm64_latest"
 IMAGE_DIR="/tmp/pi-cluster-images"
 IMAGE_XZ="$IMAGE_DIR/raspios-trixie-arm64-lite.img.xz"
 IMAGE="$IMAGE_DIR/raspios-trixie-arm64-lite.img"
