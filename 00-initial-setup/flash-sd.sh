@@ -8,10 +8,12 @@ fi
 set -euo pipefail
 
 # Flash a Raspberry Pi OS image to a microSD card, pre-configured with:
-#   - SSH enabled (key-based auth using ~/.ssh/id_rsa.pub)
-#   - User account (from $USER with random password)
+#   - User account with SSH key auth (from $USER and ~/.ssh/id_rsa.pub)
 #   - Custom hostname
-#   - English (US) locale and keyboard
+#   - English (US) locale, keyboard, and America/New_York timezone
+#
+# Uses cloud-init (user-data + meta-data) on the boot partition.
+# Requires Raspberry Pi OS Trixie (2025-11-24 or later).
 #
 # Usage:
 #   ./flash-sd.sh <hostname> [/dev/rdiskN]
@@ -247,54 +249,58 @@ echo "[2/4] Writing image (this takes a few minutes)..."
 sudo dd if="$IMAGE" of="$DISK" bs=1m status=progress
 sync
 
-# Step 3: Configure boot partition (SSH, user, locale)
+# Step 3: Configure boot partition via cloud-init
 echo ""
-echo "[3/4] Configuring boot partition..."
+echo "[3/4] Configuring cloud-init..."
 sleep 2  # give macOS time to detect partitions
 
 # macOS auto-mounts partitions after dd -- check if already mounted
 EXISTING_MOUNT=$(diskutil info "$BOOT_PARTITION" 2>/dev/null | grep "Mount Point:" | sed 's/.*Mount Point: *//' || true)
 
 if [ -n "$EXISTING_MOUNT" ] && [ "$EXISTING_MOUNT" != "" ]; then
-    # Already mounted by macOS, use that mount point
     MOUNT_POINT="$EXISTING_MOUNT"
     echo "  Boot partition already mounted at $MOUNT_POINT"
 else
-    # Not mounted, unmount any stale claims then mount manually
     diskutil unmountDisk "${DISK/rdisk/disk}" 2>/dev/null || true
     sudo mkdir -p "$MOUNT_POINT"
     sudo mount -t msdos "$BOOT_PARTITION" "$MOUNT_POINT"
 fi
 
-# Enable SSH
-sudo touch "$MOUNT_POINT/ssh"
-echo "  Enabled SSH"
-
-# Generate encrypted password to embed in firstrun script (SSH key auth will be used instead)
-RANDOM_PASSWORD=$(openssl rand -base64 32)
-ENCRYPTED_PASSWORD=$(openssl passwd -6 "$RANDOM_PASSWORD")
-
-# Read the SSH public key to embed in firstrun script
+# Read the SSH public key
 SSH_PUBKEY_CONTENT=$(cat "$SSH_PUBKEY")
 
-# Configure firstrun script (empty for now -- testing boot with ssh + empty script)
-sudo tee "$MOUNT_POINT/firstrun.sh" > /dev/null << 'FIRSTRUN'
-#!/bin/bash
-set -e
+# Write cloud-init user-data
+sudo tee "$MOUNT_POINT/user-data" > /dev/null << EOF
+#cloud-config
 
-# Remove this script after first run
-rm -f /boot/firmware/firstrun.sh
-sed -i 's| systemd.run=/boot/firmware/firstrun.sh||' /boot/firmware/cmdline.txt
-FIRSTRUN
-sudo chmod +x "$MOUNT_POINT/firstrun.sh"
+hostname: ${PI_HOSTNAME}
+manage_etc_hosts: true
 
-# Add firstrun.sh to cmdline.txt so it executes on first boot
-CMDLINE=$(sudo cat "$MOUNT_POINT/cmdline.txt")
-if ! echo "$CMDLINE" | grep -q "firstrun.sh"; then
-    echo "$CMDLINE systemd.run=/boot/firmware/firstrun.sh systemd.run_success_action=reboot" | sudo tee "$MOUNT_POINT/cmdline.txt" > /dev/null
-fi
-echo "  Configured locale (en_US.UTF-8), timezone (America/New_York), keyboard (us)"
-echo "  Installed SSH public key from $SSH_PUBKEY"
+locale: en_US.UTF-8
+timezone: America/New_York
+
+keyboard:
+  layout: us
+
+users:
+- name: ${PI_USER}
+  groups: users,adm,dialout,audio,netdev,video,plugdev,cdrom,games,input,gpio,spi,i2c,render,sudo
+  sudo: ALL=(ALL) NOPASSWD:ALL
+  lock_passwd: true
+  shell: /bin/bash
+  ssh_authorized_keys:
+  - ${SSH_PUBKEY_CONTENT}
+
+enable_ssh: true
+ssh_pwauth: false
+EOF
+echo "  Wrote user-data (hostname: $PI_HOSTNAME, user: $PI_USER)"
+
+# Write minimal meta-data (required for cloud-init to activate)
+sudo tee "$MOUNT_POINT/meta-data" > /dev/null << EOF
+instance-id: ${PI_HOSTNAME}
+EOF
+echo "  Wrote meta-data"
 
 # Step 4: Unmount
 echo ""
