@@ -8,7 +8,7 @@ help: ## Show this help
 # --- Step 0: Mac tooling ---
 
 setup: ## Install Ansible and sshpass on Mac
-	./00-initial-setup/setup.sh
+	./00-setup/laptop/setup.sh
 
 # --- Step 0b: Flash SD cards ---
 
@@ -19,7 +19,7 @@ flash-sd: ## Flash SD card: make flash-sd name=control [DISK=/dev/rdiskN]
 ifndef name
 	$(error name is required. Usage: make flash-sd name=control)
 endif
-	./00-initial-setup/flash-sd.sh $(name) $(if $(DISK),$(DISK),)
+	./00-setup/image/flash-sd.sh $(name) $(if $(DISK),$(DISK),)
 
 # --- Discovery ---
 
