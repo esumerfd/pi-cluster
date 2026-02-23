@@ -19,7 +19,8 @@ flash-sd: ## Flash SD card: make flash-sd name=control [DISK=/dev/rdiskN]
 ifndef name
 	$(error name is required. Usage: make flash-sd name=control)
 endif
-	./00-setup/image/flash-sd.sh $(name) $(if $(DISK),$(DISK),)
+	$(eval IP := $(shell python3 -c "import yaml; d=yaml.safe_load(open('inventory.yml')); print(d['all']['hosts']['$(name)']['ansible_host'])"))
+	./00-setup/image/flash-sd.sh $(name) $(IP) $(if $(DISK),$(DISK),)
 
 # --- Discovery ---
 
@@ -27,17 +28,19 @@ scan: ## Scan network for Pis with SSH open
 	nmap -p 22 --open 192.168.68.0/22
 
 ping: ## Ping all Pis in inventory
-	ansible pis -m ping -u $(USER)
+	ansible all -m ping -u $(USER)
 
 # --- Step 1 & 2: OS setup (all Pis) ---
 
 os-setup: ## Provision all Pis (shell config, PCIe Gen 3, reboot)
 	cd 10-os-setup && ansible-playbook playbook.yml \
+		-i $(CURDIR)/inventory.yml \
 		-u $(USER) \
 		-e "ansible_ssh_common_args='-o StrictHostKeyChecking=no'"
 
 # --- Step 3: Hailo (Pi #1 only) ---
 
-hailo-setup: ## Install Hailo drivers on Pi #1
+hailo-setup: ## Install Hailo drivers on control node
 	cd 20-hailo-setup && ansible-playbook playbook.yml \
+		-i $(CURDIR)/inventory.yml \
 		-u $(USER)

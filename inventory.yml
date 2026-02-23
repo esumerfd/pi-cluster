@@ -1,13 +1,13 @@
 all:
+  hosts:
+    control:
+      ansible_host: 192.168.68.220
+    worker1:
+      ansible_host: 192.168.68.221
+    worker2:
+      ansible_host: 192.168.68.222
   children:
-    pis:
+    workers:
       hosts:
-        pi1:
-          ansible_host: CHANGEME
-        pi2:
-          ansible_host: CHANGEME
-        pi3:
-          ansible_host: CHANGEME
-    hailo:
-      hosts:
-        pi1:
+        worker1:
+        worker2:

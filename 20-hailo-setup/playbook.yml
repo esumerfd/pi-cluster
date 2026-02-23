@@ -1,6 +1,6 @@
 ---
-- name: Hailo Installation - Pi #1 only
-  hosts: hailo
+- name: Hailo Installation - Control node only
+  hosts: control
   become: true
 
   tasks:

@@ -32,15 +32,18 @@ IMAGE_DIR="/tmp/pi-cluster-images"
 IMAGE_XZ="$IMAGE_DIR/raspios-trixie-arm64-lite.img.xz"
 IMAGE="$IMAGE_DIR/raspios-trixie-arm64-lite.img"
 
-if [ $# -lt 1 ]; then
-    echo "Usage: ./flash-sd.sh <hostname> [/dev/rdiskN]"
-    echo "Examples: ./flash-sd.sh control"
-    echo "          ./flash-sd.sh worker1 /dev/rdisk4"
+if [ $# -lt 2 ]; then
+    echo "Usage: ./flash-sd.sh <hostname> <ip> [/dev/rdiskN]"
+    echo "Examples: ./flash-sd.sh control 192.168.10.10"
+    echo "          ./flash-sd.sh worker1 192.168.10.11 /dev/rdisk4"
     exit 1
 fi
 
 PI_HOSTNAME="$1"
-shift
+PI_IP="$2"
+PI_GATEWAY="192.168.68.1"
+PI_SUBNET="192.168.68.0/22"
+shift 2
 
 PI_USER="${USER:?USER environment variable is not set}"
 SSH_PUBKEY="$HOME/.ssh/id_rsa.pub"
@@ -225,6 +228,8 @@ echo "Image:          $IMAGE"
 echo "Target disk:    $DISK"
 echo "Boot partition: $BOOT_PARTITION"
 echo "Hostname:       $PI_HOSTNAME"
+echo "IP:             $PI_IP"
+echo "Gateway:        $PI_GATEWAY"
 echo "Pi user:        $PI_USER"
 echo ""
 
@@ -301,6 +306,23 @@ sudo tee "$MOUNT_POINT/meta-data" > /dev/null << EOF
 instance-id: ${PI_HOSTNAME}
 EOF
 echo "  Wrote meta-data"
+
+# Write cloud-init network-config (static IP)
+sudo tee "$MOUNT_POINT/network-config" > /dev/null << EOF
+network:
+  version: 2
+  ethernets:
+    eth0:
+      addresses:
+      - ${PI_IP}/24
+      nameservers:
+        addresses:
+        - ${PI_GATEWAY}
+      routes:
+      - to: default
+        via: ${PI_GATEWAY}
+EOF
+echo "  Wrote network-config (ip: $PI_IP, gateway: $PI_GATEWAY)"
 
 # Step 4: Unmount
 echo ""

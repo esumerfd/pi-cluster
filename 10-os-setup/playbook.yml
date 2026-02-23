@@ -1,10 +1,9 @@
 ---
 - name: OS Setup - All Pis
-  hosts: pis
+  hosts: all
   become: true
 
   tasks:
-    # Configure shell
     - name: Set vi mode in bashrc
       lineinfile:
         path: "/home/{{ ansible_user }}/.bashrc"
@@ -12,13 +11,22 @@
         owner: "{{ ansible_user }}"
         group: "{{ ansible_user }}"
 
-    # Enable PCIe Gen 3
+- name: OS Setup - Control node only
+  hosts: control
+  become: true
+
+  tasks:
+    # Enable PCIe Gen 3 for Hailo-10H (Pi 5 is Gen 2 certified but Gen 3 capable)
     - name: Enable PCIe Gen 3.0 in config.txt
       lineinfile:
         path: /boot/firmware/config.txt
         line: "dtparam=pciex1_gen=3"
 
-    # Reboot and wait
+- name: Reboot all Pis
+  hosts: all
+  become: true
+
+  tasks:
     - name: Reboot Pi
       reboot:
         reboot_timeout: 120
