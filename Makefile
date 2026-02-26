@@ -19,7 +19,7 @@ flash-sd: ## Flash SD card: make flash-sd name=control [DISK=/dev/rdiskN]
 ifndef name
 	$(error name is required. Usage: make flash-sd name=control)
 endif
-	$(eval IP := $(shell python3 -c "import yaml; d=yaml.safe_load(open('inventory.yml')); print(d['all']['hosts']['$(name)']['ansible_host'])"))
+	$(eval IP := $(shell grep -A1 "^    $(name):" inventory.yml | grep "ansible_host" | awk '{print $$2}'))
 	./00-setup/image/flash-sd.sh $(name) $(IP) $(if $(DISK),$(DISK),)
 
 # --- Discovery ---
