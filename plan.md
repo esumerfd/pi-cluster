@@ -93,13 +93,14 @@ SSH to the Pi using the default credentials (`pi` / `raspberry`).
 ## Step 3: Hailo Installation
 
 **Input:** IP address of the target Pi
-**SSH User:** `esumerfd` / `SECRET_PASSWORD`
+**SSH User:** `esumerfd` / ssh key
 **Applies to:** Pi #1 only (the node with the AI HAT+ attached)
 
 ### 3a) Install Hailo software
 
 ```bash
-sudo apt install hailo-all
+sudo apt install dkms
+sudo apt install hailo-h10-all
 ```
 
 ### 3b) Reboot
@@ -136,6 +137,12 @@ Check kernel logs for Hailo driver messages:
 ```bash
 dmesg | grep -i hailo
 ```
+
+---
+
+## References
+
+- **[AI HAT+ Documentation](https://www.raspberrypi.com/documentation/accessories/ai-hat-plus.html)** - Official Raspberry Pi AI HAT+ setup and usage guide
 
 ---
 

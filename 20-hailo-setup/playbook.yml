@@ -5,13 +5,21 @@
 
   tasks:
     # Step 3a: Install Hailo software
-    - name: Install hailo-all package
+    - name: Install required packages
       apt:
-        name: hailo-all
+        name:
+          - dkms
+          - hailo-h10-all
         state: present
         update_cache: true
 
-    # Step 3b: Reboot
+    # Step 3b: Blacklist built-in hailo_pci (Hailo-8) driver so hailo1x_pci (Hailo-10H) can load cleanly
+    - name: Blacklist hailo_pci kernel module
+      copy:
+        dest: /etc/modprobe.d/hailo-blacklist.conf
+        content: "blacklist hailo_pci\n"
+
+    # Step 3c: Reboot
     - name: Reboot Pi
       reboot:
         reboot_timeout: 120
