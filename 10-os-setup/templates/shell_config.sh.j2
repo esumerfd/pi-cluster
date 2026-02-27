@@ -3,5 +3,65 @@
 
 set -o vi
 
+# History
+export HISTSIZE=9000
+export HISTFILESIZE=$HISTSIZE
+export HISTCONTROL=ignoreboth
+export HISTIGNORE="ls:ll:[bf]g:hist:history*:clear:exit"
+
+# ls
+alias ls='ls -F'
 alias ll='ls -l'
 alias la='ls -la'
+alias lld='ls -l | grep "/"'
+alias lldm='ls -l -tr'
+alias llg='ls -l | grep -i'
+alias lll="ls -l | grep '\->'"
+alias llla="ls -la | grep '\->'"
+
+# filesystem
+alias md='mkdir -p'
+alias mv='mv -i'
+alias rm='rm -i'
+alias rmf='rm -f'
+alias rmr='rm -r'
+alias df='df -kH'
+
+# head / tail
+alias h='head'
+alias h1='head -10'
+alias h2='head -20'
+alias h3='head -30'
+alias h4='head -40'
+alias h5='head -50'
+alias t='tail -100F'
+alias t1='tail -10'
+alias t2='tail -20'
+alias t3='tail -30'
+alias t4='tail -40'
+alias t5='tail -50'
+
+# process
+alias cpu='ps -ef | sort -rn +3 | head -14'
+alias k9='kill -9'
+alias pg9='pgrep -lfU `id -u`'
+
+# network
+alias listen='netstat -an | grep LISTEN | grep tcp'
+alias estab='netstat -an | grep ESTAB'
+alias lsof_tcp='lsof -nP -iTCP'
+alias lsof_tcp_listen='lsof -nP -iTCP | grep LISTEN'
+alias show_ip='hostname -I'
+
+# encoding
+alias b64d='base64 --decode'
+alias b64e='base64'
+alias b64jq='base64 --decode | jq'
+
+# misc
+alias py=python3
+alias path='echo $PATH | tr ":" "\n"'
+alias cls='clear'
+alias :q=exit
+alias :qa=exit
+alias qq=exit
