@@ -4,12 +4,11 @@
   become: true
 
   tasks:
-    - name: Set vi mode in bashrc
-      lineinfile:
-        path: "/home/{{ ansible_user }}/.bashrc"
-        line: "set -o vi"
-        owner: "{{ ansible_user }}"
-        group: "{{ ansible_user }}"
+    - name: Deploy shell config
+      template:
+        src: templates/shell_config.sh.j2
+        dest: /etc/profile.d/cluster.sh
+        mode: "0644"
 
 - name: OS Setup - Control node only
   hosts: control
