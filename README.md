@@ -38,3 +38,9 @@ A 3-node Raspberry Pi 5 cluster for running local LLM inference, with a Hailo AI
 ## Getting Started
 
 See [plan.md](plan.md) for the full setup plan and [CLAUDE.md](CLAUDE.md) for detailed phase breakdowns.
+
+# References
+
+- [Raspberry Pi 5 Announcement](https://www.raspberrypi.com/news/raspberry-pi-5/)
+- [Hailo AI HAT+](https://hailo.ai/products/hailo
+- [Hailo 2 Dashbaord](https://github.com/kristoffersingleton/RPI-Hailo-10H-Web-Dashboard) 
