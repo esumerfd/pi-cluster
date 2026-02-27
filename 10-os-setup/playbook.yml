@@ -20,12 +20,9 @@
       lineinfile:
         path: /boot/firmware/config.txt
         line: "dtparam=pciex1_gen=3"
+      register: pcie_config
 
-- name: Reboot all Pis
-  hosts: all
-  become: true
-
-  tasks:
-    - name: Reboot Pi
+    - name: Reboot if PCIe config changed
       reboot:
         reboot_timeout: 120
+      when: pcie_config.changed

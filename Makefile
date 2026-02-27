@@ -1,6 +1,6 @@
 USER := $(shell whoami)
 
-.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup
+.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -42,5 +42,12 @@ os-setup: ## Provision all Pis (shell config, PCIe Gen 3, reboot)
 
 hailo-setup: ## Install Hailo drivers on control node
 	cd 20-hailo-setup && ansible-playbook playbook.yml \
+		-i $(CURDIR)/inventory.yml \
+		-u $(USER)
+
+# --- Step 4: Monitoring (Pi #1 only) ---
+
+monitor-setup: ## Deploy Hailo web dashboard on control node
+	cd 30-monitor-setup && ansible-playbook playbook.yml \
 		-i $(CURDIR)/inventory.yml \
 		-u $(USER)

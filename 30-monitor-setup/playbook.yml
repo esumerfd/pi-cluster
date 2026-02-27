@@ -1,0 +1,46 @@
+---
+- name: Monitoring Setup - Control node only
+  hosts: control
+  become: true
+
+  vars:
+    dashboard_repo: https://github.com/kristoffersingleton/RPI-Hailo-10H-Web-Dashboard
+    dashboard_dir: /opt/hailo-dashboard
+    dashboard_port: 8765
+    dashboard_user: "{{ ansible_user }}"
+
+  tasks:
+    # Hailo Web Dashboard
+    - name: Install dashboard dependencies
+      apt:
+        name:
+          - git
+          - python3-flask
+        state: present
+        update_cache: true
+
+    - name: Clone Hailo web dashboard
+      git:
+        repo: "{{ dashboard_repo }}"
+        dest: "{{ dashboard_dir }}"
+        update: true
+
+    - name: Set dashboard directory ownership
+      file:
+        path: "{{ dashboard_dir }}"
+        owner: "{{ dashboard_user }}"
+        group: "{{ dashboard_user }}"
+        recurse: true
+
+    - name: Install hailo-dashboard systemd service
+      template:
+        src: templates/hailo-dashboard.service.j2
+        dest: /etc/systemd/system/hailo-dashboard.service
+        mode: "0644"
+
+    - name: Enable and start hailo-dashboard service
+      systemd:
+        name: hailo-dashboard
+        enabled: true
+        state: restarted
+        daemon_reload: true
