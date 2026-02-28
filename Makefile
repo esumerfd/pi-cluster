@@ -1,6 +1,6 @@
 USER := $(shell whoami)
 
-.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup
+.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup app-setup
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -49,5 +49,12 @@ hailo-setup: ## Install Hailo drivers on control node
 
 monitor-setup: ## Deploy Hailo web dashboard on control node
 	cd 30-monitor-setup && ansible-playbook playbook.yml \
+		-i $(CURDIR)/inventory.yml \
+		-u $(USER)
+
+# --- Step 5: Apps (Pi #1 only) ---
+
+app-setup: ## Install applications on control node (rpicam-apps)
+	cd 40-app-setup && ansible-playbook playbook.yml \
 		-i $(CURDIR)/inventory.yml \
 		-u $(USER)

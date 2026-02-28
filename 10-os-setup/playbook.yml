@@ -4,6 +4,14 @@
   become: true
 
   tasks:
+    - name: Install tools
+      apt:
+        name:
+          - lsof
+          - jq
+        state: present
+        update_cache: true
+
     - name: Deploy shell config
       template:
         src: templates/shell_config.sh.j2

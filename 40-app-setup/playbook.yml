@@ -1,0 +1,12 @@
+---
+- name: App Setup - Control node only
+  hosts: control
+  become: true
+
+  tasks:
+    # Hailo-accelerated camera pipeline
+    - name: Install rpicam-apps
+      apt:
+        name: rpicam-apps
+        state: present
+        update_cache: true

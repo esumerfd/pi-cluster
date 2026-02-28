@@ -22,3 +22,8 @@ A Raspberry Pi 5 cluster with AI HAT+ 2 (Hailo-10H) for running LLM inference at
 - Use gigabit Ethernet (not Wi-Fi) for distributed inference
 - HAT model compilation requires an x86_64 workstation
 - RL training should happen on a GPU machine; deploy to Pi for inference
+
+# References
+
+* [Frigate with Hailo for object detection on a Raspberry Pi|https://www.jeffgeerling.com/blog/2026/frigate-with-hailo-for-object-detection-on-a-raspberry-pi]
+* [How to setup the Hailo 2 and run models|https://www.raspberrypi.com/documentation/computers/ai.html]
