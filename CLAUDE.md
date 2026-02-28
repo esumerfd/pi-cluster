@@ -27,3 +27,4 @@ A Raspberry Pi 5 cluster with AI HAT+ 2 (Hailo-10H) for running LLM inference at
 
 * [Frigate with Hailo for object detection on a Raspberry Pi|https://www.jeffgeerling.com/blog/2026/frigate-with-hailo-for-object-detection-on-a-raspberry-pi]
 * [How to setup the Hailo 2 and run models|https://www.raspberrypi.com/documentation/computers/ai.html]
+* [Raspberry PI AI software|https://www.raspberrypi.com/documentation/computers/ai.html]
