@@ -1,0 +1,13 @@
+---
+- name: Benchmark - Control node only
+  hosts: control
+  become: false
+
+  tasks:
+    - name: Run yolov8m_h10 benchmark
+      command: hailortcli benchmark /usr/share/hailo-models/yolov8m_h10.hef
+      register: benchmark_result
+
+    - name: Show benchmark results
+      debug:
+        var: benchmark_result.stdout_lines
