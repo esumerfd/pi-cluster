@@ -37,10 +37,10 @@ A 3-node Raspberry Pi 5 cluster for running local LLM inference, with a Hailo AI
 
 | Node | Dashboard | URL |
 |------|-----------|-----|
-| control | RaspiDash (system monitor) | http://192.168.68.220:8766 |
-| control | Hailo-10H Dashboard | http://192.168.68.220:8765 |
-| worker1 | RaspiDash (system monitor) | http://192.168.68.221:8766 |
-| worker2 | RaspiDash (system monitor) | http://192.168.68.222:8766 |
+| control | RaspiDash (system monitor) | http://control.local:8766 |
+| control | Hailo-10H Dashboard | http://control.local:8765 |
+| worker1 | RaspiDash (system monitor) | http://worker1.local:8766 |
+| worker2 | RaspiDash (system monitor) | http://worker2.local:8766 |
 
 ## Getting Started
 

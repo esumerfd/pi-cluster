@@ -6,9 +6,9 @@ A Raspberry Pi 5 cluster with AI HAT+ 2 (Hailo-10H) for running LLM inference at
 
 | Host | IP | Hardware |
 |------|----|----------|
-| control | 192.168.68.220 | Pi 5 + Hailo-10H AI HAT+ (40 TOPS) |
-| worker1 | 192.168.68.221 | Pi 5 8GB |
-| worker2 | 192.168.68.222 | Pi 5 8GB |
+| control | control.local | Pi 5 + Hailo-10H AI HAT+ (40 TOPS) |
+| worker1 | worker1.local | Pi 5 8GB |
+| worker2 | worker2.local | Pi 5 8GB |
 
 ## Key Software
 

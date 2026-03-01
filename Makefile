@@ -1,5 +1,10 @@
 USER := $(shell whoami)
 
+# Static IPs used only at SD card flash time (cloud-init network-config)
+IP_control  := 192.168.68.220
+IP_worker1  := 192.168.68.221
+IP_worker2  := 192.168.68.222
+
 .PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark
 
 help: ## Show this help
@@ -19,8 +24,7 @@ flash-sd: ## Flash SD card: make flash-sd name=control [DISK=/dev/rdiskN]
 ifndef name
 	$(error name is required. Usage: make flash-sd name=control)
 endif
-	$(eval IP := $(shell grep -A1 "^    $(name):" inventory.yml | grep "ansible_host" | awk '{print $$2}'))
-	@./00-setup/image/flash-sd.sh $(name) $(IP) $(if $(DISK),$(DISK),)
+	@./00-setup/image/flash-sd.sh $(name) $(IP_$(name)) $(if $(DISK),$(DISK),)
 
 # --- Discovery ---
 

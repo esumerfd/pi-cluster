@@ -9,14 +9,44 @@
         name:
           - lsof
           - jq
+          - avahi-daemon
         state: present
         update_cache: true
+
+    - name: Set hostname
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Enable and start avahi-daemon
+      systemd:
+        name: avahi-daemon
+        enabled: true
+        state: started
+
+    - name: Deploy motd
+      template:
+        src: templates/motd.j2
+        dest: /etc/motd
+        mode: "0644"
+
+    - name: Suppress wifi-check warning
+      file:
+        path: /etc/profile.d/wifi-check.sh
+        state: absent
 
     - name: Deploy shell config
       template:
         src: templates/shell_config.sh.j2
         dest: /etc/profile.d/cluster.sh
         mode: "0644"
+
+    - name: Set PS1 in .bashrc
+      become: false
+      lineinfile:
+        path: "~/.bashrc"
+        line: "PS1='\\[\\033[01;32m\\]\\h\\[\\033[00m\\] \\[\\033[01;34m\\]\\W\\[\\033[00m\\]: '"
+        regexp: "^PS1=.*cluster.*"
+        insertafter: EOF
 
 - name: OS Setup - Control node only
   hosts: control

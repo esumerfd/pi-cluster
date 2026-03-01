@@ -10,9 +10,9 @@ INVENTORY="$PROJECT_ROOT/inventory.yml"
 INTERVAL="${POLL_INTERVAL:-5}"
 
 HOSTS=(
-  "control:192.168.68.220"
-  "worker1:192.168.68.221"
-  "worker2:192.168.68.222"
+  "control:control.local"
+  "worker1:worker1.local"
+  "worker2:worker2.local"
 )
 
 # Colors

@@ -10,6 +10,7 @@ export HISTCONTROL=ignoreboth
 export HISTIGNORE="ls:ll:[bf]g:hist:history*:clear:exit"
 
 # ls
+alias l='ls -CF'
 alias ls='ls -F'
 alias ll='ls -l'
 alias la='ls -la'
@@ -18,6 +19,8 @@ alias lldm='ls -l -tr'
 alias llg='ls -l | grep -i'
 alias lll="ls -l | grep '\->'"
 alias llla="ls -la | grep '\->'"
+
+alias g="grep -i"0
 
 # filesystem
 alias md='mkdir -p'
