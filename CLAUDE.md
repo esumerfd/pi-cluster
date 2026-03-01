@@ -2,30 +2,32 @@
 
 A Raspberry Pi 5 cluster with AI HAT+ 2 (Hailo-10H) for running LLM inference at the edge.
 
-## Hardware
+## Nodes
 
-- **Pi #1:** Pi 5 + AI HAT+ 2 (Hailo-10H, 40 TOPS) - NPU inference node
-- **Pi #2:** Pi 5 8GB - CPU inference / worker
-- **Pi #3:** Pi 5 8GB - CPU inference / worker
+| Host | IP | Hardware |
+|------|----|----------|
+| control | 192.168.68.220 | Pi 5 + Hailo-10H AI HAT+ (40 TOPS) |
+| worker1 | 192.168.68.221 | Pi 5 8GB |
+| worker2 | 192.168.68.222 | Pi 5 8GB |
 
-## Project Goals
+## Key Software
 
-1. **Learn LLM runtime layers** - Understand how LLMs run end-to-end
-2. **Explore edge AI capabilities** - Test what works on the Hailo-10H NPU
-3. **Build distributed inference** - Split larger models across multiple Pis
-4. **Create orchestration layer** - Route requests to appropriate backends
-5. **Understand LLM internals** - Study model architecture, fine-tuning, quantization
-6. **RL for robot spider** - Train a policy to make a robot spider walk
+- **control:** hailo-h10-all, rpicam-apps, raspi-dash (:8766), hailo-dashboard (:8765)
+- **workers:** raspi-dash (:8766)
+- **all:** lsof, jq, shell config at `/etc/profile.d/cluster.sh`
 
 ## Key Constraints
 
+- Hailo model compilation (HEF) requires an x86_64 workstation — cannot run on Pi
 - Use gigabit Ethernet (not Wi-Fi) for distributed inference
-- HAT model compilation requires an x86_64 workstation
-- RL training should happen on a GPU machine; deploy to Pi for inference
+- `hailo_pci` (Hailo-8 kernel driver) is blacklisted — only `hailo1x_pci` loads
+- Hailo device is at `/dev/hailo0`, PCIe address `0001:01:00.0`
 
-# References
+## Project Goals
 
-* [Frigate with Hailo for object detection on a Raspberry Pi](https://www.jeffgeerling.com/blog/2026/frigate-with-hailo-for-object-detection-on-a-raspberry-pi)
-* [How to setup the Hailo 2 and run models](https://www.raspberrypi.com/documentation/computers/ai.html)
-* [Raspberry PI AI software](https://www.raspberrypi.com/documentation/computers/ai.html)
-* [RaspiDash](https://github.com/kristoffersingleton/raspi-dashboard-hailo-10h)
+1. Learn LLM runtime layers end-to-end
+2. Explore edge AI on the Hailo-10H NPU
+3. Build distributed inference across nodes
+4. Create an orchestration layer to route requests
+5. Understand model architecture, fine-tuning, quantization
+6. RL policy for a robot spider (train on GPU, deploy to Pi)

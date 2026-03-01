@@ -16,31 +16,41 @@ A 3-node Raspberry Pi 5 cluster for running local LLM inference, with a Hailo AI
 
 ## Hardware
 
-| Node | Hardware | RAM |
-|---|---|---|
-| Pi #1 | Raspberry Pi 5 + AI HAT+ (Hailo) | 8GB + 8GB on-HAT |
-| Pi #2 | Raspberry Pi 5 | 8GB |
-| Pi #3 | Raspberry Pi 5 | 8GB |
+| Node | Host | IP | Hardware | RAM |
+|------|------|----|----------|-----|
+| Pi #1 | control | 192.168.68.220 | Raspberry Pi 5 + AI HAT+ (Hailo-10H, 40 TOPS) | 16GB + 8GB on-HAT |
+| Pi #2 | worker1 | 192.168.68.221 | Raspberry Pi 5 | 16GB |
+| Pi #3 | worker2 | 192.168.68.222 | Raspberry Pi 5 | 16GB |
 
 ## Status
 
 | Phase | Target | Status |
-|---|---|---|
-| 00 - Initial Setup | Mac | Done -- Ansible and sshpass installed |
-| 10 - OS Setup | Pi #1 | Red LED, not booting -- needs re-flash. HAT may be interfering. |
-| 10 - OS Setup | Pi #2 | Booted (green light), SSH not enabled -- needs re-flash |
-| 10 - OS Setup | Pi #3 | Booted (green light), SSH not enabled -- needs re-flash |
-| 10 - OS Setup | All | Blocked -- all 3 Pis need re-flash with SSH enabled |
-| 20 - Hailo Setup | Pi #1 | Not started |
+|-------|--------|--------|
+| [00 - Mac Setup](00-setup/) | Mac | ✅ Ansible and sshpass installed |
+| [10 - OS Setup](10-os-setup/) | All Pis | ✅ Shell config, tools (lsof, jq), PCIe Gen 3 enabled on control |
+| [20 - Hailo Setup](20-hailo-setup/) | Control | ✅ hailo-h10-all installed, hailo_pci blacklisted, device verified at `/dev/hailo0` |
+| [30 - Monitor Setup](30-monitor-setup/) | All Pis | ✅ raspi-dash running on port 8766 |
+| [30 - Monitor Setup](30-monitor-setup/) | Control | ✅ Hailo-10H dashboard running on port 8765 |
+| [40 - App Setup](40-app-setup/rpicam-apps/) | Control | ✅ rpicam-apps installed |
 
-**Current blocker:** All 3 Pis need to be re-flashed with SSH enabled in Raspberry Pi Imager. Pi #1 is not booting (red LED only) -- try removing the AI HAT+ and booting without it to rule out a power or PCIe issue.
+## Dashboards
+
+| Node | Dashboard | URL |
+|------|-----------|-----|
+| control | RaspiDash (system monitor) | http://192.168.68.220:8766 |
+| control | Hailo-10H Dashboard | http://192.168.68.220:8765 |
+| worker1 | RaspiDash (system monitor) | http://192.168.68.221:8766 |
+| worker2 | RaspiDash (system monitor) | http://192.168.68.222:8766 |
 
 ## Getting Started
 
-See [plan.md](plan.md) for the full setup plan and [CLAUDE.md](CLAUDE.md) for detailed phase breakdowns.
+See [plan.md](plan.md) for the full setup plan and [models.md](models.md) for installed Hailo models.
 
-# References
+## References
 
-- [Raspberry Pi 5 Announcement](https://www.raspberrypi.com/news/raspberry-pi-5/)
-- [Hailo AI HAT+](https://hailo.ai/products/hailo
-- [Hailo 2 Dashbaord](https://github.com/kristoffersingleton/RPI-Hailo-10H-Web-Dashboard) 
+- [AI HAT+ Documentation](https://www.raspberrypi.com/documentation/accessories/ai-hat-plus.html)
+- [Raspberry Pi AI Software](https://www.raspberrypi.com/documentation/computers/ai.html)
+- [Hailo-10H Web Dashboard](https://github.com/kristoffersingleton/RPI-Hailo-10H-Web-Dashboard)
+- [RaspiDash System Monitor](https://github.com/kristoffersingleton/raspi-dash)
+- [Hailo Model Zoo](https://github.com/hailo-ai/hailo_model_zoo)
+- [Frigate with Hailo for object detection on a Raspberry Pi](https://www.jeffgeerling.com/blog/2026/frigate-with-hailo-for-object-detection-on-a-raspberry-pi)
