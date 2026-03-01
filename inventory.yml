@@ -1,4 +1,6 @@
 all:
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   hosts:
     control:
       ansible_host: 192.168.68.220
