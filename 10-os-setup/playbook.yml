@@ -23,16 +23,21 @@
         enabled: true
         state: started
 
-    - name: Deploy motd
-      template:
-        src: templates/motd.j2
+    - name: Clear motd
+      copy:
+        content: ""
         dest: /etc/motd
-        mode: "0644"
 
     - name: Suppress wifi-check warning
       file:
         path: /etc/profile.d/wifi-check.sh
         state: absent
+
+    - name: Revert pam_motd to noupdate
+      lineinfile:
+        path: /etc/pam.d/sshd
+        regexp: "^session.*pam_motd.so motd=/etc/motd"
+        line: "session    optional     pam_motd.so noupdate"
 
     - name: Deploy shell config
       template:
@@ -47,6 +52,12 @@
         line: "PS1='\\[\\033[01;32m\\]\\h\\[\\033[00m\\] \\[\\033[01;34m\\]\\W\\[\\033[00m\\]: '"
         regexp: "^PS1=.*cluster.*"
         insertafter: EOF
+
+  handlers:
+    - name: Restart sshd
+      systemd:
+        name: sshd
+        state: restarted
 
 - name: OS Setup - Control node only
   hosts: control
