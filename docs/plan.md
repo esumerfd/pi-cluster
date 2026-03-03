@@ -56,6 +56,14 @@ Each project gets its own `plan-<name>.md`.
 
 ---
 
+## Part 3: Infrastructure
+
+| Plan | Description | Status |
+|------|-------------|--------|
+| [plan-k3s.md](plan-k3s.md) | k3s Kubernetes cluster — control server + worker1/worker2 agents | 🔲 Planned |
+
+---
+
 ## Next Step
 
 Choose a project from the list above and create `plan-<name>.md`.

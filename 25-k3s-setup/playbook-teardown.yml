@@ -1,0 +1,23 @@
+---
+# Uninstall k3s from all cluster nodes.
+# Run workers before control to drain gracefully.
+
+- name: k3s Teardown - Worker nodes
+  hosts: workers
+  become: true
+
+  tasks:
+    - name: Uninstall k3s agent
+      command: /usr/local/bin/k3s-agent-uninstall.sh
+      args:
+        removes: /usr/local/bin/k3s
+
+- name: k3s Teardown - Control node
+  hosts: control
+  become: true
+
+  tasks:
+    - name: Uninstall k3s server
+      command: /usr/local/bin/k3s-uninstall.sh
+      args:
+        removes: /usr/local/bin/k3s

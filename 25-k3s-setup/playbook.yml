@@ -1,0 +1,250 @@
+---
+# Play 1: Pre-requisites on all nodes
+- name: k3s Prerequisites - All nodes
+  hosts: all
+  become: true
+
+  tasks:
+    # k3s requires swap to be off
+    - name: Disable dphys-swapfile service
+      systemd:
+        name: dphys-swapfile
+        enabled: false
+        state: stopped
+      failed_when: false
+
+    # Pi OS does not enable cgroup memory by default — k3s needs it
+    - name: Enable cgroup memory in cmdline.txt
+      lineinfile:
+        path: /boot/firmware/cmdline.txt
+        backrefs: true
+        regexp: '^((?!.*cgroup_enable=memory).*)'
+        line: '\1 cgroup_enable=memory cgroup_memory=1'
+      register: cgroup_config
+
+    - name: Reboot if cgroup config changed
+      reboot:
+        reboot_timeout: 120
+      when: cgroup_config.changed
+
+# Play 2: Install k3s server on control
+- name: k3s Server - Control node
+  hosts: control
+  become: true
+
+  vars:
+    k3s_version: "v1.34.4+k3s1"
+
+  tasks:
+    - name: Ensure k3s config directory exists
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Write k3s server config
+      copy:
+        dest: /etc/rancher/k3s/config.yaml
+        owner: root
+        group: root
+        mode: '0600'
+        content: |
+          disable: traefik
+          node-name: {{ inventory_hostname }}
+          advertise-address: {{ ansible_facts["default_ipv4"]["address"] }}
+          tls-san:
+            - control.local
+            - {{ ansible_facts["default_ipv4"]["address"] }}
+      notify: Restart k3s
+
+    - name: Check installed k3s version
+      command: k3s --version
+      register: k3s_installed
+      failed_when: false
+      changed_when: false
+
+    - name: Install k3s server
+      shell: curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={{ k3s_version }} sh -
+      when: k3s_installed.rc != 0 or k3s_version not in k3s_installed.stdout
+
+    - name: Wait for k3s API server to be ready
+      wait_for:
+        port: 6443
+        delay: 5
+        timeout: 60
+
+    - name: Wait for control node to be Ready
+      command: kubectl get node {{ inventory_hostname }} --no-headers
+      register: node_status
+      until: node_status.stdout is search('Ready')
+      retries: 12
+      delay: 10
+      changed_when: false
+
+    - name: Read node token
+      slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_token_raw
+
+    - name: Set token fact (shared with workers via hostvars)
+      set_fact:
+        k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+
+    # The agent's internal load balancer needs the server CA cert to establish
+    # TLS to the backend before it can proxy the /cacerts bootstrap request.
+    # Without this, the agent gets into a chicken-and-egg loop.
+    - name: Read server CA cert
+      slurp:
+        src: /var/lib/rancher/k3s/server/tls/server-ca.crt
+      register: k3s_server_ca
+
+    - name: Set CA cert fact (shared with workers via hostvars)
+      set_fact:
+        k3s_ca_cert: "{{ k3s_server_ca.content | b64decode }}"
+
+  handlers:
+    - name: Restart k3s
+      systemd:
+        name: k3s
+        state: restarted
+
+# Play 3: Join workers as k3s agents
+- name: k3s Agents - Worker nodes
+  hosts: workers
+  become: true
+
+  vars:
+    k3s_version: "v1.34.4+k3s1"
+    k3s_server_url: "https://control.local:6443"
+
+  tasks:
+    - name: Check installed k3s version
+      command: k3s --version
+      register: k3s_installed
+      failed_when: false
+      changed_when: false
+
+    # INSTALL_K3S_SKIP_START=true installs the binary and writes the service
+    # file without starting the agent. Without this flag the script blocks
+    # waiting for a successful connection to the server.
+    - name: Install k3s agent binary and service file
+      shell: |
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_SKIP_START=true \
+          INSTALL_K3S_VERSION={{ k3s_version }} \
+          K3S_URL={{ k3s_server_url }} \
+          K3S_TOKEN={{ hostvars['control']['k3s_token'] }} \
+          sh -s - agent --node-name {{ inventory_hostname }}
+      when: k3s_installed.rc != 0 or k3s_version not in k3s_installed.stdout
+      timeout: 120
+
+    - name: Ensure k3s config directory exists
+      file:
+        path: /etc/rancher/k3s
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Ensure k3s agent data directory exists
+      file:
+        path: /var/lib/rancher/k3s/agent/etc
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+
+    # Pre-seed the server CA cert so the agent's LB can validate TLS to the backend.
+    - name: Write server CA cert for agent bootstrap
+      copy:
+        dest: /var/lib/rancher/k3s/agent/server-ca.crt
+        content: "{{ hostvars['control']['k3s_ca_cert'] }}"
+        owner: root
+        group: root
+        mode: '0644'
+
+    # Pre-seed the agent load balancer config with the server's IP address.
+    # Without ServerAddresses the LB has no resolved backend and resets every
+    # incoming connection, causing the 127.0.0.1:6444 bootstrap loop.
+    - name: Write agent load balancer config
+      copy:
+        dest: /var/lib/rancher/k3s/agent/etc/k3s-agent-load-balancer.json
+        owner: root
+        group: root
+        mode: '0600'
+        content: |
+          {
+            "ServerURL": "{{ k3s_server_url }}",
+            "ServerAddresses": ["{{ hostvars['control']['ansible_facts']['default_ipv4']['address'] }}:6443"]
+          }
+
+    # Write env file explicitly so the correct URL/token are always present,
+    # even when the binary install step was skipped (version already matched).
+    - name: Write k3s agent environment file
+      copy:
+        dest: /etc/rancher/k3s/k3s.service.env
+        owner: root
+        group: root
+        mode: '0600'
+        content: |
+          K3S_URL={{ k3s_server_url }}
+          K3S_TOKEN={{ hostvars['control']['k3s_token'] }}
+      notify: Restart k3s-agent
+
+    - name: Enable k3s-agent service
+      systemd:
+        name: k3s-agent
+        enabled: true
+        daemon_reload: true
+
+    # --no-block avoids hanging: k3s-agent uses Type=notify and only sends
+    # the ready signal after it connects to the server, which takes time.
+    - name: Start k3s-agent service
+      command: systemctl start --no-block k3s-agent
+
+  handlers:
+    - name: Restart k3s-agent
+      command: systemctl restart --no-block k3s-agent
+
+# Play 4: Label nodes and verify
+- name: k3s Cluster - Label nodes and verify
+  hosts: control
+  become: true
+
+  tasks:
+    - name: Wait for all workers to register as Ready
+      command: kubectl get node {{ item }} --no-headers
+      register: worker_status
+      until: worker_status.stdout is search('Ready')
+      retries: 18
+      delay: 10
+      changed_when: false
+      loop:
+        - worker1
+        - worker2
+
+    - name: Label control node with Hailo NPU
+      command: kubectl label node control hailo.ai/device=hailo-10h --overwrite
+      changed_when: true
+
+    - name: Label control node as AI inference node
+      command: kubectl label node control node-role.kubernetes.io/ai-inference=true --overwrite
+      changed_when: true
+
+    - name: Label worker nodes
+      command: kubectl label node {{ item }} node-role.kubernetes.io/worker=true --overwrite
+      changed_when: true
+      loop:
+        - worker1
+        - worker2
+
+    - name: Show cluster nodes
+      command: kubectl get nodes -o wide
+      register: cluster_nodes
+      changed_when: false
+
+    - name: Display cluster status
+      debug:
+        var: cluster_nodes.stdout_lines

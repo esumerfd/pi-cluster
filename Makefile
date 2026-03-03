@@ -5,7 +5,7 @@ IP_control  := 192.168.68.220
 IP_worker1  := 192.168.68.221
 IP_worker2  := 192.168.68.222
 
-.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark
+.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark k3s-setup k3s-teardown
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -65,5 +65,17 @@ app-setup: ## Install applications on control node (rpicam-apps)
 
 benchmark: ## Run Hailo benchmark on control node (optional)
 	@cd 40-app-setup/benchmark && ansible-playbook playbook.yml \
+		-i $(CURDIR)/inventory.yml \
+		-u $(USER)
+
+# --- Step 6: k3s cluster ---
+
+k3s-setup: ## Deploy k3s cluster (control as server, workers as agents)
+	@cd 25-k3s-setup && ansible-playbook playbook.yml \
+		-i $(CURDIR)/inventory.yml \
+		-u $(USER)
+
+k3s-teardown: ## Uninstall k3s from all nodes (workers first, then control)
+	@cd 25-k3s-setup && ansible-playbook playbook-teardown.yml \
 		-i $(CURDIR)/inventory.yml \
 		-u $(USER)
