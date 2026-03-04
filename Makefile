@@ -7,7 +7,7 @@ else
   KUBECONFIG_DIR := $(HOME)/.kube
 endif
 
-.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark k3s-setup k3s-teardown kubeconfig
+.PHONY: help setup flash-sd flash-all list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark k3s-setup k3s-teardown kubeconfig
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -30,6 +30,23 @@ ifndef ip
 	$(error ip is required. Usage: make flash-sd name=control ip=192.168.68.220)
 endif
 	@./00-setup/image/flash-sd.sh $(name) $(ip) $(if $(DISK),$(DISK),)
+
+flash-all: ## Flash SD cards for all nodes one at a time (control, worker1, worker2)
+	@echo "=== Flashing SD cards for all 3 nodes ==="
+	@echo ""
+	@echo "--- Node 1/3: control (192.168.68.220) ---"
+	@printf "Insert SD card for control and press Enter (Ctrl+C to abort)..."; read _
+	@$(MAKE) --no-print-directory flash-sd name=control ip=192.168.68.220 $(if $(DISK),DISK=$(DISK))
+	@echo ""
+	@echo "--- Node 2/3: worker1 (192.168.68.221) ---"
+	@printf "Insert SD card for worker1 and press Enter (Ctrl+C to abort)..."; read _
+	@$(MAKE) --no-print-directory flash-sd name=worker1 ip=192.168.68.221 $(if $(DISK),DISK=$(DISK))
+	@echo ""
+	@echo "--- Node 3/3: worker2 (192.168.68.222) ---"
+	@printf "Insert SD card for worker2 and press Enter (Ctrl+C to abort)..."; read _
+	@$(MAKE) --no-print-directory flash-sd name=worker2 ip=192.168.68.222 $(if $(DISK),DISK=$(DISK))
+	@echo ""
+	@echo "All 3 SD cards flashed."
 
 # --- Discovery ---
 
