@@ -1,6 +1,6 @@
 USER := $(shell whoami)
 
-.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark k3s-setup k3s-teardown
+.PHONY: help setup flash-sd list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark k3s-setup k3s-teardown kubeconfig
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -77,3 +77,13 @@ k3s-teardown: ## Uninstall k3s from all nodes (workers first, then control)
 	@ansible-playbook 25-k3s-setup/playbook-teardown.yml \
 		-i inventory.yml \
 		-u $(USER)
+
+kubeconfig: ## Fetch k3s kubeconfig from control and install to ~/.kube/pi-cluster.yaml
+	@mkdir -p ~/.kube
+	@ssh $(USER)@control.local "sudo cat /etc/rancher/k3s/k3s.yaml" \
+		| sed 's|https://127.0.0.1:6443|https://control.local:6443|g' \
+		| sed 's/: default/: pi-cluster/g' \
+		> ~/.kube/pi-cluster.yaml
+	@chmod 600 ~/.kube/pi-cluster.yaml
+	@echo "Kubeconfig written to ~/.kube/pi-cluster.yaml"
+	@echo "Run: export KUBECONFIG=~/.kube/pi-cluster.yaml"
