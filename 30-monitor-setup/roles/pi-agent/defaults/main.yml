@@ -4,7 +4,7 @@
 pi_agent_repo: "esumerfd/pi-cluster-monitor"
 
 # Set to a specific tag (e.g. "v0.1.0") or "latest" to auto-resolve
-pi_agent_version: "v0.1.0"
+pi_agent_version: "v0.2.0"
 
 # Port the agent listens on
 pi_agent_port: 8765

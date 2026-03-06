@@ -1,29 +1,22 @@
 ---
 # Upstream role: https://github.com/esumerfd/pi-cluster-monitor/tree/main/ansible/roles/pi-agent
 
-- name: Resolve latest release tag from GitHub API
+- name: Resolve release info from GitHub API
   ansible.builtin.uri:
-    url: "https://api.github.com/repos/{{ pi_agent_repo }}/releases/latest"
+    url: "https://api.github.com/repos/{{ pi_agent_repo }}/releases/{{ 'latest' if pi_agent_version == 'latest' else 'tags/' ~ pi_agent_version }}"
     headers:
       Accept: "application/vnd.github.v3+json"
     return_content: true
   register: _github_release
-  when: pi_agent_version == "latest"
-
-- name: Set resolved version fact
-  ansible.builtin.set_fact:
-    _pi_agent_tag: "{{ _github_release.json.tag_name if pi_agent_version == 'latest' else pi_agent_version }}"
 
 - name: Find .deb asset URL in release
   ansible.builtin.set_fact:
     _pi_agent_deb_url: >-
-      {{ (_github_release.json.assets
-          | selectattr('name', 'match', '.*\\.deb')
-          | map(attribute='browser_download_url')
-          | list
-          | first)
-         if pi_agent_version == 'latest'
-         else 'https://github.com/' ~ pi_agent_repo ~ '/releases/download/' ~ _pi_agent_tag ~ '/pi-agent_' ~ (_pi_agent_tag | regex_replace('^v','')) ~ '_arm64.deb' }}
+      {{ _github_release.json.assets
+         | selectattr('content_type', 'equalto', 'application/x-debian-package')
+         | map(attribute='browser_download_url')
+         | list
+         | first }}
 
 - name: Create pi-agent system user
   ansible.builtin.user:
