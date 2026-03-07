@@ -7,7 +7,7 @@ else
   KUBECONFIG_DIR := $(HOME)/.kube
 endif
 
-.PHONY: help setup flash-sd flash-all list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark k3s-setup k3s-teardown kubeconfig
+.PHONY: help setup flash-sd flash-all list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark k3s-setup k3s-teardown kubeconfig camera camera-stop
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -89,6 +89,12 @@ benchmark: ## Run Hailo benchmark on control node (optional)
 	@ansible-playbook 40-app-setup/benchmark/playbook.yml \
 		-i inventory.yml \
 		-u $(USER)
+
+camera: ## Stream camera from control via rpicam-vid and open in VLC
+	@40-app-setup/camera/start.sh $(USER)
+
+camera-stop: ## Stop rpicam-vid on control if left running
+	@40-app-setup/camera/stop.sh $(USER)
 
 # --- Step 6: k3s cluster ---
 
