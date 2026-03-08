@@ -7,7 +7,7 @@ else
   KUBECONFIG_DIR := $(HOME)/.kube
 endif
 
-.PHONY: help setup flash-sd flash-all list-disks scan ping os-setup hailo-setup monitor-setup app-setup benchmark k3s-setup k3s-teardown kubeconfig camera camera-stop
+.PHONY: help setup flash-sd flash-all list-disks scan ping os-setup hailo-setup monitor-setup k3s-setup k3s-teardown kubeconfig app-benchmark app-camera app-camera-stop app-object-detection
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -71,31 +71,6 @@ hailo-setup: ## Install Hailo drivers on control node
 		-i inventory.yml \
 		-u $(USER)
 
-# --- Step 4: Monitoring (Pi #1 only) ---
-
-monitor-setup: ## Deploy Hailo web dashboard on control node
-	@ansible-playbook 30-monitor-setup/playbook.yml \
-		-i inventory.yml \
-		-u $(USER)
-
-# --- Step 5: Apps (Pi #1 only) ---
-
-app-setup: ## Install applications on control node (rpicam-apps)
-	@ansible-playbook 40-app-setup/rpicam-apps/playbook.yml \
-		-i inventory.yml \
-		-u $(USER)
-
-benchmark: ## Run Hailo benchmark on control node (optional)
-	@ansible-playbook 40-app-setup/benchmark/playbook.yml \
-		-i inventory.yml \
-		-u $(USER)
-
-camera: ## Stream camera from control via rpicam-vid and open in VLC
-	@40-app-setup/camera/start.sh $(USER)
-
-camera-stop: ## Stop rpicam-vid on control if left running
-	@40-app-setup/camera/stop.sh $(USER)
-
 # --- Step 6: k3s cluster ---
 
 k3s-setup: ## Deploy k3s cluster (control as server, workers as agents)
@@ -117,3 +92,28 @@ kubeconfig: ## Fetch k3s kubeconfig from control and install to platform kubecon
 	@chmod 600 "$(KUBECONFIG_DIR)/pi-cluster.yaml"
 	@echo "Kubeconfig written to $(KUBECONFIG_DIR)/pi-cluster.yaml"
 	@echo "Run: export KUBECONFIG=\"$(KUBECONFIG_DIR)/pi-cluster.yaml\""
+	#
+# --- Step 4: Monitoring (Pi #1 only) ---
+
+monitor-setup: ## Deploy Hailo web dashboard on control node
+	@ansible-playbook 30-monitor-setup/playbook.yml \
+		-i inventory.yml \
+		-u $(USER)
+
+# --- Step 5: Apps (Pi #1 only) ---
+
+app-benchmark: ## Run Hailo benchmark on control node (optional)
+	@ansible-playbook 40-app-setup/benchmark/playbook.yml \
+		-i inventory.yml \
+		-u $(USER)
+
+app-camera: ## Stream camera from control via rpicam-vid and open in VLC
+	@40-app-setup/camera/start.sh $(USER)
+
+app-camera-stop: ## Stop rpicam-vid on control if left running
+	@40-app-setup/camera/stop.sh $(USER)
+
+app-object-detection: ## Run YOLOv8 object detection on control (Ctrl+C to stop)
+	@40-app-setup/object-detection/start.sh $(USER)
+
+
