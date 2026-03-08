@@ -298,9 +298,31 @@ users:
 enable_ssh: true
 ssh_pwauth: false
 
+write_files:
+- path: /etc/avahi/avahi-daemon.conf
+  permissions: '0644'
+  content: |
+    [server]
+    host-name=${PI_HOSTNAME}
+    domain-name=local
+    use-ipv4=yes
+    use-ipv6=yes
+    allow-interfaces=wlan0
+    deny-interfaces=eth0,cni0,flannel.1
+
+    [wide-area]
+    enable-wide-area=no
+
+    [publish]
+    publish-addresses=yes
+    publish-hinfo=yes
+    publish-workstation=no
+    publish-domain=yes
+
 runcmd:
   - raspi-config nonint do_wifi_country ${WIFI_COUNTRY}
   - rfkill unblock wifi
+  - systemctl restart avahi-daemon
 EOF
 echo "  Wrote user-data (hostname: $PI_HOSTNAME, user: $PI_USER)"
 
