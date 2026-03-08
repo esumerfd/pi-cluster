@@ -33,8 +33,20 @@
         mode: "0600"
       register: wifi_config
 
+    - name: Configure avahi to advertise only on wlan0
+      template:
+        src: templates/avahi-daemon.conf.j2
+        dest: /etc/avahi/avahi-daemon.conf
+        mode: "0644"
+
     - name: Apply netplan if config changed
       command: netplan apply
+      when: wifi_config.changed or eth0_config.changed
+
+    - name: Wait for connection to recover after netplan apply
+      wait_for_connection:
+        delay: 5
+        timeout: 60
       when: wifi_config.changed or eth0_config.changed
 
 
@@ -88,6 +100,11 @@
         insertafter: EOF
 
   handlers:
+    - name: Restart avahi-daemon
+      systemd:
+        name: avahi-daemon
+        state: restarted
+
     - name: Restart sshd
       systemd:
         name: sshd
