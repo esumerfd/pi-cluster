@@ -11,39 +11,38 @@ set -euo pipefail
 #   - User account with SSH key auth (from $USER and ~/.ssh/id_rsa.pub)
 #   - Custom hostname
 #   - English (US) locale, keyboard, and America/New_York timezone
+#   - WiFi configured from first boot (DHCP, mDNS via avahi)
 #
-# Uses cloud-init (user-data + meta-data) on the boot partition.
+# Uses cloud-init (user-data + meta-data + network-config) on the boot partition.
 # Requires Raspberry Pi OS Trixie (2025-11-24 or later).
 #
-# Usage:
-#   ./flash-sd.sh <hostname> [/dev/rdiskN]
+# Invoke via Ansible (00-setup/playbook.yml) so WiFi credentials are
+# sourced from the Ansible vault. Do not call directly.
 #
-# Examples:
-#   ./flash-sd.sh control          # auto-detect disk
-#   ./flash-sd.sh worker1 /dev/rdisk4
+# Usage:
+#   ansible-playbook 00-setup/playbook.yml -e pi_hostname=<hostname>
 #
 # If no disk is specified, the script will detect removable disks and offer a menu.
 # The script downloads the official Raspberry Pi OS Trixie image automatically.
 # System disks (internal, synthesized, APFS) are always excluded.
-# Pis connect via Ethernet -- no WiFi configuration is needed.
 
 IMAGE_URL="https://downloads.raspberrypi.com/raspios_lite_arm64_latest"
 IMAGE_DIR="/tmp/pi-cluster-images"
 IMAGE_XZ="$IMAGE_DIR/raspios-trixie-arm64-lite.img.xz"
 IMAGE="$IMAGE_DIR/raspios-trixie-arm64-lite.img"
 
-if [ $# -lt 2 ]; then
-    echo "Usage: ./flash-sd.sh <hostname> <ip> [/dev/rdiskN]"
-    echo "Examples: ./flash-sd.sh control 192.168.10.10"
-    echo "          ./flash-sd.sh worker1 192.168.10.11 /dev/rdisk4"
+if [ $# -lt 1 ]; then
+    echo "Usage: ansible-playbook 00-setup/playbook.yml -e pi_hostname=<hostname>"
+    echo "Do not call this script directly -- Ansible provides the WiFi credentials."
     exit 1
 fi
 
 PI_HOSTNAME="$1"
-PI_IP="$2"
-PI_GATEWAY="192.168.68.1"
-PI_SUBNET="192.168.68.0/22"
-shift 2
+shift 1
+
+WIFI_SSID="${WIFI_SSID:?WIFI_SSID environment variable is not set}"
+WIFI_PASSWORD="${WIFI_PASSWORD:?WIFI_PASSWORD environment variable is not set}"
+WIFI_COUNTRY="${WIFI_COUNTRY:-US}"
 
 PI_USER="${USER:?USER environment variable is not set}"
 SSH_PUBKEY="$HOME/.ssh/id_rsa.pub"
@@ -228,8 +227,8 @@ echo "Image:          $IMAGE"
 echo "Target disk:    $DISK"
 echo "Boot partition: $BOOT_PARTITION"
 echo "Hostname:       $PI_HOSTNAME"
-echo "IP:             $PI_IP"
-echo "Gateway:        $PI_GATEWAY"
+echo "WiFi SSID:      $WIFI_SSID"
+echo "WiFi country:   $WIFI_COUNTRY"
 echo "Pi user:        $PI_USER"
 echo ""
 
@@ -298,6 +297,10 @@ users:
 
 enable_ssh: true
 ssh_pwauth: false
+
+runcmd:
+  - raspi-config nonint do_wifi_country ${WIFI_COUNTRY}
+  - rfkill unblock wifi
 EOF
 echo "  Wrote user-data (hostname: $PI_HOSTNAME, user: $PI_USER)"
 
@@ -307,22 +310,23 @@ instance-id: ${PI_HOSTNAME}
 EOF
 echo "  Wrote meta-data"
 
-# Write cloud-init network-config (static IP)
+# Write cloud-init network-config (DHCP on eth0 + WiFi)
 sudo tee "$MOUNT_POINT/network-config" > /dev/null << EOF
 network:
   version: 2
   ethernets:
     eth0:
-      addresses:
-      - ${PI_IP}/24
-      nameservers:
-        addresses:
-        - ${PI_GATEWAY}
-      routes:
-      - to: default
-        via: ${PI_GATEWAY}
+      dhcp4: true
+      optional: true
+  wifis:
+    wlan0:
+      dhcp4: true
+      regulatory-domain: ${WIFI_COUNTRY}
+      access-points:
+        "${WIFI_SSID}":
+          password: "${WIFI_PASSWORD}"
 EOF
-echo "  Wrote network-config (ip: $PI_IP, gateway: $PI_GATEWAY)"
+echo "  Wrote network-config (WiFi: $WIFI_SSID, country: $WIFI_COUNTRY)"
 
 # Step 4: Unmount
 echo ""
@@ -332,4 +336,5 @@ diskutil unmountDisk "${DISK/rdisk/disk}" || true
 diskutil eject "${DISK/rdisk/disk}"
 
 echo ""
-echo "Done. SD card is ready -- insert it into a Pi and connect via Ethernet."
+echo "Done. SD card is ready -- insert into a Pi and it will join WiFi on first boot."
+echo "Connect via: ssh ${PI_USER}@${PI_HOSTNAME}.local"

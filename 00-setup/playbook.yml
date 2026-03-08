@@ -1,0 +1,25 @@
+---
+- name: Flash SD card for a Pi node
+  hosts: localhost
+  connection: local
+
+  vars:
+    wifi_country: US
+
+  vars_files:
+    - ../10-os-setup/vars/secrets.yml
+
+  tasks:
+    - name: Require pi_hostname variable
+      fail:
+        msg: "Specify the target node with -e pi_hostname=<hostname>"
+      when: pi_hostname is not defined
+
+    - name: Flash SD card for {{ pi_hostname }}
+      shell: ./flash-sd.sh "{{ pi_hostname }}"
+      args:
+        chdir: "{{ playbook_dir }}/image"
+      environment:
+        WIFI_SSID: "{{ wifi_ssid }}"
+        WIFI_PASSWORD: "{{ wifi_password }}"
+        WIFI_COUNTRY: "{{ wifi_country }}"

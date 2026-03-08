@@ -10,6 +10,16 @@
     - vars/secrets.yml
 
   tasks:
+    - name: Remove auto-generated netplan files that override our config
+      shell: find /etc/netplan -name '90-NM-*.yaml' -delete
+      register: eth0_config
+
+    - name: Deploy eth0 netplan config (DHCP, optional)
+      template:
+        src: templates/eth0.yaml.j2
+        dest: /etc/netplan/90-eth0.yaml
+        mode: "0600"
+
     - name: Set WiFi country code
       command: raspi-config nonint do_wifi_country "{{ wifi_country }}"
 
@@ -23,9 +33,9 @@
         mode: "0600"
       register: wifi_config
 
-    - name: Apply netplan if WiFi config changed
+    - name: Apply netplan if config changed
       command: netplan apply
-      when: wifi_config.changed
+      when: wifi_config.changed or eth0_config.changed
 
 
     - name: Install tools
