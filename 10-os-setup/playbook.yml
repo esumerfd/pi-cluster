@@ -3,7 +3,31 @@
   hosts: all
   become: true
 
+  vars:
+    wifi_country: US
+
+  vars_files:
+    - vars/secrets.yml
+
   tasks:
+    - name: Set WiFi country code
+      command: raspi-config nonint do_wifi_country "{{ wifi_country }}"
+
+    - name: Unblock WiFi radio
+      command: rfkill unblock wifi
+
+    - name: Deploy WiFi netplan config
+      template:
+        src: templates/wifi.yaml.j2
+        dest: /etc/netplan/60-wifi.yaml
+        mode: "0600"
+      register: wifi_config
+
+    - name: Apply netplan if WiFi config changed
+      command: netplan apply
+      when: wifi_config.changed
+
+
     - name: Install tools
       apt:
         name:
