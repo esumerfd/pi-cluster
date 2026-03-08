@@ -116,4 +116,5 @@ app-camera-stop: ## Stop rpicam-vid on control if left running
 app-object-detection: ## Run YOLOv8 object detection on control (Ctrl+C to stop)
 	@40-app-setup/object-detection/start.sh $(USER)
 
-
+monitor:
+	pi-monitor --inventory inventory.yml
