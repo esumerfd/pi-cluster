@@ -118,6 +118,7 @@ ifndef name
 	$(error name is required. Usage: make app-id-pi name=control)
 endif
 	@40-app-setup/id-pi/id-pi.sh $(USER) $(name)
+	@# Note: run without sudo - SSHes as your user, uses sudo on the Pi for LED writes
 
 monitor:
 	pi-monitor --inventory inventory.yml

@@ -27,16 +27,16 @@ if [[ -z "$LED" || ! -d "$LED" ]]; then
 fi
 
 original=$(cat "$LED/trigger" | grep -oP '\[\K[^\]]+')
-echo "none" > "$LED/trigger"
+echo "none" | sudo tee "$LED/trigger" > /dev/null
 
 for i in $(seq 1 10); do
-  echo 1 > "$LED/brightness"
-  sleep 0.15
-  echo 0 > "$LED/brightness"
-  sleep 0.15
+  echo 1 | sudo tee "$LED/brightness" > /dev/null
+  sleep 0.1
+  echo 0 | sudo tee "$LED/brightness" > /dev/null
+  sleep 0.1
 done
 
-echo "$original" > "$LED/trigger"
+echo "$original" | sudo tee "$LED/trigger" > /dev/null
 echo "Done. LED trigger restored to: $original"
 REMOTE
 
