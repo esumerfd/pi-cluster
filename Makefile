@@ -22,29 +22,26 @@ setup: ## Install Ansible and sshpass on Mac
 list-disks: ## List disks to find your microSD card
 	@diskutil list
 
-flash-sd: ## Flash SD card: make flash-sd name=control ip=192.168.68.220 [DISK=/dev/rdiskN]
+flash-sd: ## Flash SD card: make flash-sd name=control [DISK=/dev/rdiskN]
 ifndef name
-	$(error name is required. Usage: make flash-sd name=control ip=192.168.68.220)
+	$(error name is required. Usage: make flash-sd name=control)
 endif
-ifndef ip
-	$(error ip is required. Usage: make flash-sd name=control ip=192.168.68.220)
-endif
-	@./00-setup/image/flash-sd.sh $(name) $(ip) $(if $(DISK),$(DISK),)
+	@ansible-playbook 00-setup/playbook.yml -e "pi_hostname=$(name)" $(if $(DISK),-e "pi_disk=$(DISK)",)
 
 flash-all: ## Flash SD cards for all nodes one at a time (control, worker1, worker2)
 	@echo "=== Flashing SD cards for all 3 nodes ==="
 	@echo ""
-	@echo "--- Node 1/3: control (192.168.68.220) ---"
+	@echo "--- Node 1/3: control ---"
 	@printf "Insert SD card for control and press Enter (Ctrl+C to abort)..."; read _
-	@$(MAKE) --no-print-directory flash-sd name=control ip=192.168.68.220 $(if $(DISK),DISK=$(DISK))
+	@$(MAKE) --no-print-directory flash-sd name=control $(if $(DISK),DISK=$(DISK),)
 	@echo ""
-	@echo "--- Node 2/3: worker1 (192.168.68.221) ---"
+	@echo "--- Node 2/3: worker1 ---"
 	@printf "Insert SD card for worker1 and press Enter (Ctrl+C to abort)..."; read _
-	@$(MAKE) --no-print-directory flash-sd name=worker1 ip=192.168.68.221 $(if $(DISK),DISK=$(DISK))
+	@$(MAKE) --no-print-directory flash-sd name=worker1 $(if $(DISK),DISK=$(DISK),)
 	@echo ""
-	@echo "--- Node 3/3: worker2 (192.168.68.222) ---"
+	@echo "--- Node 3/3: worker2 ---"
 	@printf "Insert SD card for worker2 and press Enter (Ctrl+C to abort)..."; read _
-	@$(MAKE) --no-print-directory flash-sd name=worker2 ip=192.168.68.222 $(if $(DISK),DISK=$(DISK))
+	@$(MAKE) --no-print-directory flash-sd name=worker2 $(if $(DISK),DISK=$(DISK),)
 	@echo ""
 	@echo "All 3 SD cards flashed."
 

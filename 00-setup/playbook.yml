@@ -16,7 +16,8 @@
       when: pi_hostname is not defined
 
     - name: Flash SD card for {{ pi_hostname }}
-      shell: ./flash-sd.sh "{{ pi_hostname }}"
+      shell: ./flash-sd.sh "{{ pi_hostname }}" {% if pi_disk is defined %}"{{ pi_disk }}"{% endif %}
+
       args:
         chdir: "{{ playbook_dir }}/image"
       environment:

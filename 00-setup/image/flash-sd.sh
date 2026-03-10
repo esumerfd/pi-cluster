@@ -47,6 +47,19 @@ WIFI_COUNTRY="${WIFI_COUNTRY:-US}"
 PI_USER="${USER:?USER environment variable is not set}"
 SSH_PUBKEY="$HOME/.ssh/id_rsa.pub"
 
+# dd requires root to write directly to a block device. When invoked via
+# Ansible there is no TTY for sudo to prompt for a password, so passwordless
+# sudo must be configured. Validate this before doing any real work.
+if ! sudo -n dd if=/dev/null of=/dev/null 2>/dev/null || ! sudo -n tee /dev/null </dev/null 2>/dev/null; then
+    echo "ERROR: passwordless sudo is required."
+    echo "  dd writes directly to the block device and must run as root."
+    echo "  Ansible has no TTY to prompt for a password."
+    echo ""
+    echo "  Add the following to /etc/sudoers.d/pi-flash:"
+    echo "    ${PI_USER} ALL=(ALL) NOPASSWD: /bin/dd, /bin/mkdir, /sbin/mount_msdos, /bin/rm"
+    exit 1
+fi
+
 if [ ! -f "$SSH_PUBKEY" ]; then
     echo "ERROR: SSH public key not found at $SSH_PUBKEY"
     echo "Generate one with: ssh-keygen -t rsa"
@@ -158,7 +171,7 @@ select_disk() {
         return
     fi
 
-    echo "Found ${#removable_disks[@]} removable disks:"
+    echo "Found ${#removable_disks[@]} removable disks — specify one with DISK=/dev/rdiskN:"
     echo ""
     local i=1
     for entry in "${removable_disks[@]}"; do
@@ -166,20 +179,12 @@ select_disk() {
         local rest="${entry#*|}"
         local name="${rest%%|*}"
         local size="${rest##*|}"
-        echo "  $i) $disk  $name  $size"
+        echo "  /dev/r${disk#/dev/}  $name  $size"
         i=$((i + 1))
     done
     echo ""
-    read -p "Select disk [1-${#removable_disks[@]}]: " CHOICE
-
-    if ! [[ "$CHOICE" =~ ^[0-9]+$ ]] || [ "$CHOICE" -lt 1 ] || [ "$CHOICE" -gt ${#removable_disks[@]} ]; then
-        echo "Invalid selection."
-        exit 1
-    fi
-
-    local selected="${removable_disks[$((CHOICE - 1))]}"
-    local disk="${selected%%|*}"
-    DISK="/dev/r${disk#/dev/}"
+    echo "Usage: make flash-sd name=${PI_HOSTNAME} DISK=/dev/rdiskN"
+    exit 1
 }
 
 # Use provided disk argument or auto-detect
@@ -232,16 +237,6 @@ echo "WiFi country:   $WIFI_COUNTRY"
 echo "Pi user:        $PI_USER"
 echo ""
 
-# Safety check: show disk info
-echo "Target disk info:"
-diskutil list "${DISK/rdisk/disk}" 2>/dev/null || true
-echo ""
-read -p "This will ERASE ${DISK}. Type 'yes' to continue: " CONFIRM
-if [ "$CONFIRM" != "yes" ]; then
-    echo "Aborted."
-    exit 1
-fi
-
 # Step 1: Unmount all partitions on the disk
 echo ""
 echo "[1/4] Unmounting disk..."
@@ -250,7 +245,7 @@ diskutil unmountDisk "${DISK/rdisk/disk}" || true
 # Step 2: Write the image
 echo ""
 echo "[2/4] Writing image (this takes a few minutes)..."
-sudo dd if="$IMAGE" of="$DISK" bs=1m status=progress
+sudo dd if="$IMAGE" of="$DISK" bs=1m
 sync
 
 # Step 3: Configure boot partition via cloud-init
