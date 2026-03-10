@@ -7,7 +7,7 @@ else
   KUBECONFIG_DIR := $(HOME)/.kube
 endif
 
-.PHONY: help setup flash-sd flash-all list-disks scan ping os-setup hailo-setup monitor-setup k3s-setup k3s-teardown kubeconfig app-benchmark app-camera app-camera-stop app-object-detection
+.PHONY: help setup flash-sd flash-all list-disks scan ping os-setup hailo-setup monitor-setup k3s-setup k3s-teardown kubeconfig app-benchmark app-camera app-camera-stop app-object-detection app-id-pi
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-20s %s\n", $$1, $$2}'
@@ -112,6 +112,12 @@ app-camera-stop: ## Stop rpicam-vid on control if left running
 
 app-object-detection: ## Run YOLOv8 object detection on control (Ctrl+C to stop)
 	@40-app-setup/object-detection/start.sh $(USER)
+
+app-id-pi: ## Flash ACT LED on a Pi to identify it physically: make app-id-pi name=worker1
+ifndef name
+	$(error name is required. Usage: make app-id-pi name=control)
+endif
+	@40-app-setup/id-pi/id-pi.sh $(USER) $(name)
 
 monitor:
 	pi-monitor --inventory inventory.yml
